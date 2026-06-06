@@ -28,18 +28,30 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 # Buat folder upload jika belum ada
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Load model dan scaler
+# Load model dan scaler dengan pengecekan yang lebih baik
 print("="*50)
 print("MEMUAT MODEL RANDOM FOREST...")
 print("="*50)
 
+# Cek file model ada atau tidak
+model_path = 'random_forest_waste_model.pkl'
+scaler_path = 'scaler.pkl'
+
+print(f"Checking {model_path}: {os.path.exists(model_path)}")
+print(f"Checking {scaler_path}: {os.path.exists(scaler_path)}")
+print(f"Current directory contents: {os.listdir('.')}")
+
 try:
-    model = joblib.load('random_forest_waste_model.pkl')
-    scaler = joblib.load('scaler.pkl')
-    print("✅ Model dan Scaler berhasil dimuat!")
+    if os.path.exists(model_path) and os.path.exists(scaler_path):
+        model = joblib.load(model_path)
+        scaler = joblib.load(scaler_path)
+        print("✅ Model dan Scaler berhasil dimuat!")
+    else:
+        print(f"❌ File tidak ditemukan!")
+        model = None
+        scaler = None
 except Exception as e:
     print(f"❌ Gagal memuat model: {e}")
-    print("Pastikan file 'random_forest_waste_model.pkl' dan 'scaler.pkl' ada!")
     model = None
     scaler = None
 
@@ -258,6 +270,19 @@ def health_check():
         'model_loaded': model is not None,
         'scaler_loaded': scaler is not None
     })
+
+@app.route('/check-model')
+def check_model():
+    """Endpoint debug untuk cek file model"""
+    import os
+    files = os.listdir('.')
+    pkl_files = [f for f in files if f.endswith('.pkl')]
+    return {
+        'model_exists': os.path.exists('random_forest_waste_model.pkl'),
+        'scaler_exists': os.path.exists('scaler.pkl'),
+        'all_pkl_files': pkl_files,
+        'all_files': files[:20]  # tampilkan 20 file pertama
+    }
 
 if __name__ == '__main__':
     print("\n" + "="*50)
